@@ -1,0 +1,91 @@
+import re  # Módulo para trabajar con expresiones regulares
+import random  # Módulo para generar números aleatorios
+from mcrcon import MCRcon  # Biblioteca para enviar comandos RCON al servidor de juego
+
+# Función para determinar si un punto está dentro del rectángulo
+def estaDentroDelRectangulo(x, y):
+    # Coordenadas de los vértices del rectángulo
+    coordRectangulo = [
+        (314936, 425299),
+        (267230, 57449),
+        (434862, 73969),
+        (401812, 421078)
+    ]
+
+    # Función auxiliar para calcular el área de un triángulo dados sus vértices
+    def calcularArea(x1, y1, x2, y2, x3, y3):
+        return abs((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) / 2.0)
+    
+    # Función auxiliar para verificar si un punto está dentro de un triángulo
+    def puntoEnTriangulo(px, py, t):
+        x1, y1, x2, y2, x3, y3 = t
+        A = calcularArea(x1, y1, x2, y2, x3, y3)
+        A1 = calcularArea(px, py, x2, y2, x3, y3)
+        A2 = calcularArea(x1, y1, px, py, x3, y3)
+        A3 = calcularArea(x1, y1, x2, y2, px, py)
+        # Verifica si la suma de las áreas de los triángulos formados con el punto es igual al área del triángulo original
+        return A == A1 + A2 + A3
+
+    # Divide el rectángulo en dos triángulos
+    triangulos = [
+        (coordRectangulo[0][0], coordRectangulo[0][1], coordRectangulo[1][0], coordRectangulo[1][1], coordRectangulo[2][0], coordRectangulo[2][1]),
+        (coordRectangulo[0][0], coordRectangulo[0][1], coordRectangulo[2][0], coordRectangulo[2][1], coordRectangulo[3][0], coordRectangulo[3][1])
+    ]
+
+    # Verifica si el punto está dentro de cualquiera de los dos triángulos
+    return any(puntoEnTriangulo(x, y, t) for t in triangulos)
+
+# Función para procesar el log y ejecutar los comandos
+def procesarLog(rutaArchivo):
+    # Expresión regular para extraer datos del log
+    patronLog = re.compile(r'\[(.*?)\] Player "(.*?)" killed a Wild "(.*?)" at \[(.*?)\] with a "(.*?)"')
+    
+    # Abre el archivo de log y lee todas sus líneas
+    with open(rutaArchivo, 'r') as archivo:
+        registros = archivo.readlines()
+
+    # Itera sobre cada registro del log
+    for registro in registros:
+        # Intenta encontrar una coincidencia con la expresión regular
+        coincidencia = patronLog.match(registro)
+        if coincidencia:
+            # Extrae los grupos de la coincidencia
+            fechaHora, idJugador, nombreDino, ubicacion, arma = coincidencia.groups()
+            # Verifica si el dinosaurio es "GasBag_Character_BP_C"
+            if nombreDino == "GasBag_Character_BP_C":
+                # Extrae las coordenadas del log
+                x, y, *_ = map(float, ubicacion.split())
+                # Verifica si las coordenadas están dentro del rectángulo
+                if estaDentroDelRectangulo(x, y):
+                    # Genera parámetros aleatorios basados en el arma utilizada
+                    if arma in ["Wooden Spear", "Metal Spear", "Sword"]:
+                        nivel = random.randint(100, 150)
+                        distancia = random.randint(50, 100)
+                    elif arma in ["Shotgun", "Pump-Action Shotgun", "Sniper Rifle", "Rifle", "Assault Rifle"]:
+                        nivel = random.randint(50, 150)
+                        distancia = random.randint(100, 200)
+                    else:
+                        nivel = random.randint(1, 180)
+                        distancia = random.randint(200, 800)
+                    
+                    # Genera el comando RCON para ejecutar
+                    comando = f'cheat SpawnSetupDino "GasBag_Character_BP_C" {nivel} 0 0 {distancia}'
+                    # Llama a la función para ejecutar el comando RCON
+                    ejecutarComandoRcon(idJugador, comando)
+
+# Función para ejecutar comandos RCON
+def ejecutarComandoRcon(idJugador, comando):
+    # Establece la conexión con el servidor usando MCRcon
+    with MCRcon("tuHostRcon", "tuContraseñaRcon", port=tuPuertoRcon) as mcr:
+        # Envía el comando y obtiene la respuesta
+        respuesta = mcr.command(comando)
+        # Imprime la información del comando ejecutado
+        print(f"Comando ejecutado para el jugador {idJugador}: {comando}")
+        print(f"Respuesta: {respuesta}")
+
+# Punto de entrada del script
+if __name__ == "__main__":
+    # Define la ruta del archivo de log
+    rutaArchivoLog = "C:\\asmdata\\Servers\\Server1\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
+    # Llama a la función para procesar el log
+    procesarLog(rutaArchivoLog)
