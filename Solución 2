@@ -1,0 +1,60 @@
+import re  # Módulo para trabajar con expresiones regulares
+import random  # Módulo para generar números aleatorios
+
+# Función para procesar el log y contar los asesinatos de Gasbags
+def contarGasbags(rutaArchivo):
+    # Expresión regular para extraer datos del log
+    patronLog = re.compile(r'\[(.*?)\] Player "(.*?)" killed a Wild "(.*?)" at \[(.*?)\] with a "(.*?)"')
+    contadorGasbags = 0  # Inicializa el contador de Gasbags
+
+    # Abre el archivo de log y lee todas sus líneas
+    with open(rutaArchivo, 'r') as archivo:
+        registros = archivo.readlines()
+
+    # Itera sobre cada registro del log
+    for registro in registros:
+        # Intenta encontrar una coincidencia con la expresión regular
+        coincidencia = patronLog.match(registro)
+        if coincidencia:
+            # Extrae los grupos de la coincidencia
+            _, _, nombreDino, _, _ = coincidencia.groups()
+            # Incrementa el contador si el dinosaurio es "GasBag_Character_BP_C"
+            if nombreDino == "GasBag_Character_BP_C":
+                contadorGasbags += 1
+
+    # Devuelve el contador de Gasbags
+    return contadorGasbags
+
+# Función para actualizar el archivo Game.ini
+def actualizarGameIni(rutaGameIni, contadorGasbags):
+    # Genera un peso aleatorio para la entrada
+    pesoEntrada = round(random.uniform(0.4, 1.0), 2)
+    
+    # Determina la nueva línea de configuración basada en el contador de Gasbags
+    if contadorGasbags < 50:
+        nuevaLinea = f'ConfigAddNPCSpawnEntriesContainer=(NPCSpawnEntriesContainerClassString="SE_DinoSpawnEntriesGreenDesert_C", NPCSpawnEntries=((AnEntryName="GasBags", EntryWeight={pesoEntrada}, NPCsToSpawnStrings=("GasBags_Character_BP_C")), NPCSpawnLimits=((NPCClassString="GasBags_Character_BP_C", MaxPercentageOfDesiredNumToAllow=1.0))))'
+    elif 50 <= contadorGasbags < 100:
+        nuevaLinea = f'ConfigAddNPCSpawnEntriesContainer=(NPCSpawnEntriesContainerClassString="SE_DinoSpawnEntriesCanyons_C", NPCSpawnEntries=((AnEntryName="GasBags", EntryWeight={pesoEntrada}, NPCsToSpawnStrings=("GasBags_Character_BP_C")), NPCSpawnLimits=((NPCClassString="GasBags_Character_BP_C", MaxPercentageOfDesiredNumToAllow=1.0))))'
+    elif 100 <= contadorGasbags < 150:
+        nuevaLinea = f'ConfigAddNPCSpawnEntriesContainer=(NPCSpawnEntriesContainerClassString="SE_DinoSpawnEntriesDunes_C", NPCSpawnEntries=((AnEntryName="GasBags", EntryWeight={pesoEntrada}, NPCsToSpawnStrings=("GasBags_Character_BP_C")), NPCSpawnLimits=((NPCClassString="GasBags_Character_BP_C", MaxPercentageOfDesiredNumToAllow=1.0))))'
+    elif 150 <= contadorGasbags < 200:
+        nuevaLinea = f'ConfigAddNPCSpawnEntriesContainer=(NPCSpawnEntriesContainerClassString="SE_DinoSpawnEntriesOasis_C", NPCSpawnEntries=((AnEntryName="GasBags", EntryWeight={pesoEntrada}, NPCsToSpawnStrings=("GasBags_Character_BP_C")), NPCSpawnLimits=((NPCClassString="GasBags_Character_BP_C", MaxPercentageOfDesiredNumToAllow=1.0))))'
+    else:
+        nuevaLinea = f'ConfigAddNPCSpawnEntriesContainer=(NPCSpawnEntriesContainerClassString="SE_DinoSpawnEntriesWyvernTrench_C", NPCSpawnEntries=((AnEntryName="GasBags", EntryWeight={pesoEntrada}, NPCsToSpawnStrings=("GasBags_Character_BP_C")), NPCSpawnLimits=((NPCClassString="GasBags_Character_BP_C", MaxPercentageOfDesiredNumToAllow=1.0))))'
+    with open(rutaGameIni, 'r') as archivo:
+        lineas = archivo.readlines()
+
+    lineas = [linea for linea in lineas if not linea.startswith('ConfigAddNPCSpawnEntriesContainer')]
+
+    lineas.append(nuevaLinea + '\n')
+
+    with open(rutaGameIni, 'w') as archivo:
+        archivo.writelines(lineas)
+
+# Rutas de los archivos
+rutaArchivoLog = "C:\\asmdata\\Servers\\Server1\\ShooterGame\\Saved\\Logs\\ShooterGame.log"
+rutaGameIni = "C:\\asmdata\\Servers\\Server1\\ShooterGame\\Saved\\Config\\WindowsServer\\Game.ini"
+
+# Contar Gasbags y actualizar Game.ini
+contadorGasbags = contarGasbags(rutaArchivoLog)
+actualizarGameIni(rutaGameIni, contadorGasbags)
